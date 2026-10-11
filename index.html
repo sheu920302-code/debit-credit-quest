@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>借貸平衡大作戰</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f0e1; --paper-2:#fbf7ee; --card:#fffdf7;
+  --ink:#2a2823; --ink-2:#5f5a4f; --ink-3:#8c8576;
+  --rule:#cfdcc9; --rule-red:#e3a7a0;
+  --debit:#22437e; --debit-bg:#e6edf8;
+  --credit:#9b3a2a; --credit-bg:#f8e7e2;
+  --green:#2e6a4c; --green-bg:#e3f0e7;
+  --stamp:#c0392b; --gold:#c6922d;
+  --shadow:0 2px 0 rgba(42,40,35,.08), 0 8px 24px -12px rgba(42,40,35,.25);
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Noto Sans TC",system-ui,sans-serif; color:var(--ink);
+  background:var(--paper);
+  background-image:repeating-linear-gradient(0deg,transparent 0 31px,rgba(46,106,76,.07) 31px 32px);
+  min-height:100vh; line-height:1.55;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* header */
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;max-width:1120px;margin:0 auto}
+.logo{width:44px;height:44px;border:2.5px solid var(--stamp);border-radius:50%;display:grid;place-items:center;
+  color:var(--stamp);font-family:"Noto Serif TC",serif;font-weight:900;font-size:15px;transform:rotate(-10deg);flex:none}
+h1{font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(20px,3vw,26px);margin:0;letter-spacing:.04em}
+h1 small{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;color:var(--ink-3);font-weight:500}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.icon-btn{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);background:var(--card);display:grid;place-items:center;font-size:18px}
+.icon-btn[aria-pressed="false"]{opacity:.45}
+
+main{max-width:1120px;margin:0 auto;padding:4px 16px 48px}
+.screen{display:none}
+.screen.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:2px solid var(--ink);border-radius:var(--r);box-shadow:var(--shadow)}
+
+/* start screen */
+.start-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.intro{padding:28px}
+.intro h2{font-family:"Noto Serif TC",serif;font-size:clamp(26px,4vw,38px);margin:0 0 6px;line-height:1.25}
+.intro h2 em{font-style:normal;color:var(--stamp)}
+.intro p{color:var(--ink-2);margin:0 0 18px}
+.how{list-style:none;padding:0;margin:0 0 22px;display:grid;gap:10px}
+.how li{display:flex;gap:10px;align-items:flex-start}
+.how b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px}
+.levels{display:grid;gap:10px;margin-bottom:16px}
+.level{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 16px;border:2px solid var(--ink);border-radius:12px;background:var(--paper-2);transition:transform .12s, background .12s}
+.level:hover{transform:translateY(-2px)}
+.level[aria-checked="true"]{background:var(--green-bg);border-color:var(--green);box-shadow:inset 0 0 0 2px var(--green)}
+.level .lv-tag{font-family:"Noto Serif TC",serif;font-weight:900;font-size:22px;width:44px;flex:none;text-align:center}
+.level .lv-txt b{display:block}
+.level .lv-txt span{font-size:13px;color:var(--ink-2)}
+.level .best{margin-left:auto;font-size:12px;color:var(--ink-3);text-align:right;flex:none}
+.big-btn{display:block;width:100%;padding:15px 20px;border:2.5px solid var(--ink);border-radius:999px;background:var(--stamp);color:#fff;
+  font-weight:700;font-size:18px;letter-spacing:.08em;box-shadow:0 5px 0 var(--ink);transition:transform .08s, box-shadow .08s}
+.big-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.big-btn.alt{background:var(--card);color:var(--ink)}
+.big-btn:disabled{opacity:.45;cursor:not-allowed}
+.cheat{padding:22px}
+.cheat h3{font-family:"Noto Serif TC",serif;margin:0 0 10px;font-size:18px}
+.rule-table{width:100%;border-collapse:collapse;font-size:14px}
+.rule-table th,.rule-table td{padding:8px 6px;border-bottom:1px solid var(--rule);text-align:center}
+.rule-table th:first-child,.rule-table td:first-child{text-align:left}
+.rule-table .d{color:var(--debit);font-weight:700}
+.rule-table .c{color:var(--credit);font-weight:700}
+.eq{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--paper);font-size:14px;text-align:center}
+
+/* game */
+.hud{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.pill{display:flex;align-items:center;gap:6px;padding:6px 14px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-weight:700;font-size:14px}
+.pill .mono{font-size:15px}
+.combo{background:var(--gold);color:#fff;border-color:var(--ink);display:none}
+.combo.show{display:flex;animation:pop .3s}
+@keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.progress{flex:1 1 160px;height:12px;border:2px solid var(--ink);border-radius:999px;background:var(--card);overflow:hidden;min-width:120px}
+.progress i{display:block;height:100%;background:var(--green);width:0;transition:width .4s}
+
+.game-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.q-card{padding:18px 22px;position:relative;margin-bottom:14px}
+.q-card .tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;padding:2px 10px;border-radius:999px;background:var(--ink);color:var(--paper);margin-bottom:6px}
+.q-card .q-text{font-size:clamp(18px,2.4vw,22px);font-weight:700;margin:0}
+.q-card .q-sub{font-size:13px;color:var(--ink-3);margin-top:4px}
+
+.bank{padding:14px 16px;margin-bottom:14px}
+.section-label{font-size:13px;font-weight:700;color:var(--ink-2);margin:0 0 8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.section-label span{font-weight:400;color:var(--ink-3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border:2px solid var(--ink);border-radius:10px;background:var(--paper-2);font-weight:500;font-size:15px;
+  user-select:none;touch-action:manipulation;transition:transform .1s, background .1s, box-shadow .1s}
+.chip:hover{transform:translateY(-2px);box-shadow:0 3px 0 var(--ink)}
+.chip.sel{background:var(--gold);color:#fff;transform:translateY(-2px);box-shadow:0 3px 0 var(--ink)}
+.chip.dragging{opacity:.4}
+
+.ledger{display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.side{min-height:220px;display:flex;flex-direction:column;transition:background .15s}
+.side + .side{border-left:2px solid var(--ink)}
+.side-head{padding:10px 14px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+.side-head b{font-family:"Noto Serif TC",serif;font-size:20px}
+.side-head small{font-family:"IBM Plex Mono",monospace;letter-spacing:.15em;font-size:11px;color:var(--ink-3)}
+.side.debit .side-head b{color:var(--debit)}
+.side.credit .side-head b{color:var(--credit)}
+.drop{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;cursor:pointer;
+  background-image:repeating-linear-gradient(0deg,transparent 0 43px,var(--rule) 43px 44px)}
+.drop.armed{background-color:rgba(198,146,45,.10);outline:2px dashed var(--gold);outline-offset:-6px}
+.drop.over{background-color:rgba(198,146,45,.22)}
+.drop .empty{margin:auto;text-align:center;color:var(--ink-3);font-size:13px;padding:16px 6px}
+.line{display:flex;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--ink);border-radius:9px;padding:6px 6px 6px 10px;cursor:default;animation:pop .22s}
+.debit .line{border-left:5px solid var(--debit)}
+.credit .line{border-left:5px solid var(--credit)}
+.line .acct{flex:1;font-weight:700;font-size:14px;min-width:0;overflow-wrap:anywhere}
+.line .amt-wrap{display:flex;align-items:center;gap:2px;border-bottom:1.5px solid var(--ink-3)}
+.line .amt-wrap span{color:var(--ink-3);font-size:13px}
+.line input{width:92px;border:0;background:transparent;text-align:right;font-family:"IBM Plex Mono",monospace;font-size:15px;padding:4px 2px;color:var(--ink)}
+.line input::placeholder{color:#c4bdab}
+.line .x{border:0;background:none;font-size:16px;width:28px;height:28px;border-radius:50%;color:var(--ink-3)}
+.line .x:hover{background:var(--paper)}
+.line.ok{background:var(--green-bg)}
+.line.bad{background:#fbe4df}
+.line .mark{font-weight:900;width:20px;text-align:center}
+.totals{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--ink)}
+.totals div{padding:8px 14px;display:flex;justify-content:space-between;font-weight:700;font-size:14px}
+.totals div + div{border-left:2px solid var(--ink)}
+.totals .mono{border-bottom:3px double var(--ink)}
+
+.actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn{padding:11px 18px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-weight:700;box-shadow:0 3px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn.primary{background:var(--green);color:#fff;margin-left:auto;padding-inline:26px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* side panel */
+.panel{padding:16px}
+.scale-wrap{text-align:center}
+.scale-wrap svg{width:100%;max-width:260px;height:auto;display:block;margin:0 auto}
+.scale-status{font-weight:700;font-size:15px;margin-top:4px}
+.scale-status.ok{color:var(--green)}
+.scale-status.no{color:var(--credit)}
+.diff{font-size:13px;color:var(--ink-3)}
+.hint-box{margin-top:14px;border-top:1.5px dashed var(--ink-3);padding-top:12px}
+.hint-box ul{margin:8px 0 0;padding-left:18px;font-size:14px}
+.hint-box li{margin-bottom:4px}
+details.mini{margin-top:12px;border-top:1.5px dashed var(--ink-3);padding-top:10px;font-size:14px}
+details.mini summary{cursor:pointer;font-weight:700}
+
+/* feedback */
+.feedback{display:none;margin-top:16px;padding:18px 20px;position:relative;overflow:hidden}
+.feedback.show{display:block;animation:fade .3s}
+.feedback.good{background:var(--green-bg)}
+.feedback.bad{background:#fbece8}
+.fb-title{font-family:"Noto Serif TC",serif;font-size:22px;margin:0 0 6px}
+.journal{font-family:"IBM Plex Mono","Noto Sans TC",monospace;font-size:14px;background:var(--card);border:1.5px solid var(--ink);border-radius:10px;padding:10px 14px;margin:10px 0;overflow-x:auto}
+.journal table{border-collapse:collapse;width:100%;min-width:300px}
+.journal td{padding:3px 6px;white-space:nowrap}
+.journal td.amt{text-align:right;min-width:96px}
+.journal td:first-child{width:100%}
+.journal tr.cr td:first-child{padding-left:2.2em}
+.journal .dr-c{color:var(--debit)}
+.journal .cr-c{color:var(--credit)}
+.ex{margin:0;color:var(--ink-2)}
+.fb-row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.pts{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px;color:var(--green)}
+
+.stamp{position:fixed;left:50%;top:42%;z-index:50;pointer-events:none;
+  border:5px solid var(--stamp);color:var(--stamp);border-radius:12px;padding:8px 22px;
+  font-family:"Noto Serif TC",serif;font-weight:900;font-size:clamp(34px,7vw,60px);letter-spacing:.12em;
+  background:rgba(255,253,247,.85);opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2.4)}
+.stamp small{display:block;font-family:"IBM Plex Mono",monospace;font-size:14px;letter-spacing:.3em;text-align:center}
+.stamp.go{animation:stamp 1.1s ease forwards}
+.stamp.miss{border-color:var(--ink-2);color:var(--ink-2)}
+@keyframes stamp{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(2.4)}
+  25%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}
+  75%{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scale(.96)}}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--paper);
+  padding:10px 18px;border-radius:999px;font-size:14px;z-index:60;transition:transform .25s;max-width:calc(100% - 32px);text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* result */
+.result{max-width:760px;margin:0 auto;padding:28px}
+.result h2{font-family:"Noto Serif TC",serif;margin:0;font-size:clamp(26px,4vw,34px);text-align:center}
+.rank{text-align:center;margin:4px 0 18px;color:var(--ink-2)}
+.rank b{color:var(--stamp);font-size:20px;font-family:"Noto Serif TC",serif}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat{border:2px solid var(--ink);border-radius:12px;padding:12px;text-align:center;background:var(--paper-2)}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:24px}
+.stat .k{font-size:12px;color:var(--ink-3)}
+.newbest{display:none;text-align:center;font-weight:700;color:var(--gold);margin:-8px 0 14px}
+.newbest.show{display:block;animation:pop .4s}
+.review h3{font-family:"Noto Serif TC",serif;font-size:18px;margin:0 0 8px}
+.review-item{border-top:1.5px dashed var(--ink-3);padding:10px 0}
+.review-item p{margin:0 0 4px;font-weight:700}
+.review-empty{color:var(--green);font-weight:700}
+.result-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px}
+
+footer{text-align:center;font-size:12px;color:var(--ink-3);padding:0 16px 28px}
+
+@media (max-width:860px){
+  .start-wrap,.game-grid{grid-template-columns:1fr}
+  .panel{order:-1}
+  .panel .scale-wrap{display:flex;align-items:center;gap:12px;text-align:left}
+  .panel .scale-wrap svg{width:130px;margin:0;flex:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .result-actions{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  header{padding:12px 16px}
+  h1 small{display:none}
+  .hint-box:not(.has),details.mini{display:none}
+  .intro{padding:20px}
+  .ledger{grid-template-columns:1fr}
+  .side + .side{border-left:0;border-top:2px solid var(--ink)}
+  .side{min-height:120px}
+  .totals{grid-template-columns:1fr 1fr}
+  .btn.primary{margin-left:0;flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">借貸</div>
+  <h1>借貸平衡大作戰<small>DEBIT · CREDIT · QUEST</small></h1>
+  <div class="hdr-right">
+    <button class="icon-btn" id="soundBtn" aria-pressed="true" title="音效開關" aria-label="音效開關">🔊</button>
+    <button class="icon-btn" id="homeBtn" title="回首頁" aria-label="回首頁">⌂</button>
+  </div>
+</header>
+
+<main>
+<!-- ============ START ============ -->
+<section class="screen active" id="screen-start">
+  <div class="start-wrap">
+    <div class="card intro">
+      <h2>看交易，做分錄，<br>讓<em>借貸</em>永遠平衡。</h2>
+      <p>會計系每天都在做的事，變成一場闖關遊戲。每回合 8 題，答對越多連擊越高分。</p>
+      <ol class="how">
+        <li><b>1</b><div>閱讀上方的<strong>交易敘述</strong>。</div></li>
+        <li><b>2</b><div>從科目牌中<strong>點選</strong>（或<strong>拖曳</strong>）科目，放進「借方」或「貸方」。</div></li>
+        <li><b>3</b><div>在每一列輸入<strong>金額</strong>，天平平衡後按「過帳」。</div></li>
+        <li><b>4</b><div>卡住了可以用提示（每次 −30 分），答錯會顯示正確分錄與解析。</div></li>
+      </ol>
+      <div class="levels" role="radiogroup" aria-label="選擇難度" id="levels">
+        <button class="level" role="radio" aria-checked="true" data-lv="1">
+          <span class="lv-tag">初</span>
+          <span class="lv-txt"><b>初級：基本交易</b><span>投資、購買、賒購、收款、付費用</span></span>
+          <span class="best" data-best="1"></span>
+        </button>
+        <button class="level" role="radio" aria-checked="false" data-lv="2">
+          <span class="lv-tag">進</span>
+          <span class="lv-txt"><b>進階：調整與複合分錄</b><span>折舊、應計、遞延、處分資產、銷貨成本</span></span>
+          <span class="best" data-best="2"></span>
+        </button>
+        <button class="level" role="radio" aria-checked="false" data-lv="3">
+          <span class="lv-tag">混</span>
+          <span class="lv-txt"><b>綜合挑戰</b><span>兩個題庫隨機混合</span></span>
+          <span class="best" data-best="3"></span>
+        </button>
+      </div>
+      <button class="big-btn" id="startBtn">開始過帳 ▶</button>
+    </div>
+
+    <aside class="card cheat" aria-labelledby="cheatTitle">
+      <h3 id="cheatTitle">借貸法則小抄</h3>
+      <table class="rule-table">
+        <thead><tr><th>科目類別</th><th>增加</th><th>減少</th></tr></thead>
+        <tbody>
+          <tr><td>資產</td><td class="d">借</td><td class="c">貸</td></tr>
+          <tr><td>費用／損失</td><td class="d">借</td><td class="c">貸</td></tr>
+          <tr><td>負債</td><td class="c">貸</td><td class="d">借</td></tr>
+          <tr><td>權益</td><td class="c">貸</td><td class="d">借</td></tr>
+          <tr><td>收入／利益</td><td class="c">貸</td><td class="d">借</td></tr>
+        </tbody>
+      </table>
+      <div class="eq">資產 ＝ 負債 ＋ 權益<br><small>每一筆分錄：借方合計 ＝ 貸方合計</small></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section class="screen" id="screen-game">
+  <div class="hud">
+    <div class="pill">第 <span class="mono" id="qNo">1</span> / <span class="mono" id="qTotal">8</span> 題</div>
+    <div class="progress" aria-hidden="true"><i id="progBar"></i></div>
+    <div class="pill">⏱ <span class="mono" id="timer">00:00</span></div>
+    <div class="pill">分數 <span class="mono" id="score">0</span></div>
+    <div class="pill combo" id="combo">🔥 <span id="comboN">2</span> 連擊</div>
+  </div>
+
+  <div class="game-grid">
+    <div>
+      <div class="card q-card">
+        <span class="tag" id="qTag">交易</span>
+        <p class="q-text" id="qText"></p>
+        <div class="q-sub" id="qSub"></div>
+      </div>
+
+      <div class="card bank">
+        <p class="section-label">會計科目牌 <span id="bankHint">點一下選取，再點借方或貸方；電腦也可直接拖曳</span></p>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="card" id="ledgerCard">
+        <div class="ledger">
+          <div class="side debit">
+            <div class="side-head"><b>借方</b><small>DEBIT</small></div>
+            <div class="drop" id="drop-D" data-side="D" tabindex="0" role="button" aria-label="放入借方"></div>
+          </div>
+          <div class="side credit">
+            <div class="side-head"><b>貸方</b><small>CREDIT</small></div>
+            <div class="drop" id="drop-C" data-side="C" tabindex="0" role="button" aria-label="放入貸方"></div>
+          </div>
+        </div>
+        <div class="totals">
+          <div>借方合計 <span class="mono" id="totD">0</span></div>
+          <div>貸方合計 <span class="mono" id="totC">0</span></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="hintBtn">💡 提示（−30）</button>
+        <button class="btn" id="clearBtn">清空重來</button>
+        <button class="btn primary" id="postBtn">過帳 ✓</button>
+      </div>
+
+      <div class="card feedback" id="feedback" aria-live="polite">
+        <h3 class="fb-title" id="fbTitle"></h3>
+        <div class="journal" id="fbJournal"></div>
+        <p class="ex" id="fbEx"></p>
+        <div class="fb-row">
+          <span class="pts" id="fbPts"></span>
+          <button class="btn primary" id="nextBtn">下一題 →</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card panel">
+      <div class="scale-wrap">
+        <svg viewBox="0 0 220 150" aria-hidden="true">
+          <rect x="104" y="40" width="12" height="90" rx="3" fill="#2a2823"/>
+          <rect x="70" y="128" width="80" height="12" rx="6" fill="#2a2823"/>
+          <g id="beam" style="transition:transform .45s cubic-bezier(.3,1.6,.5,1);transform-origin:110px 40px">
+            <rect x="26" y="36" width="168" height="8" rx="4" fill="#c6922d" stroke="#2a2823" stroke-width="2"/>
+          </g>
+          <circle cx="110" cy="40" r="7" fill="#fffdf7" stroke="#2a2823" stroke-width="2.5"/>
+          <g id="panL" style="transition:transform .45s cubic-bezier(.3,1.6,.5,1)">
+            <line x1="30" y1="40" x2="14" y2="84" stroke="#2a2823" stroke-width="1.5"/>
+            <line x1="30" y1="40" x2="46" y2="84" stroke="#2a2823" stroke-width="1.5"/>
+            <path d="M6 84 h48 a24 12 0 0 1 -48 0z" fill="#e6edf8" stroke="#22437e" stroke-width="2.5"/>
+            <text x="30" y="106" text-anchor="middle" font-size="13" font-weight="700" fill="#22437e">借</text>
+          </g>
+          <g id="panR" style="transition:transform .45s cubic-bezier(.3,1.6,.5,1)">
+            <line x1="190" y1="40" x2="174" y2="84" stroke="#2a2823" stroke-width="1.5"/>
+            <line x1="190" y1="40" x2="206" y2="84" stroke="#2a2823" stroke-width="1.5"/>
+            <path d="M166 84 h48 a24 12 0 0 1 -48 0z" fill="#f8e7e2" stroke="#9b3a2a" stroke-width="2.5"/>
+            <text x="190" y="106" text-anchor="middle" font-size="13" font-weight="700" fill="#9b3a2a">貸</text>
+          </g>
+        </svg>
+        <div>
+          <div class="scale-status" id="scaleStatus">放入科目開始記帳</div>
+          <div class="diff" id="scaleDiff">&nbsp;</div>
+        </div>
+      </div>
+      <div class="hint-box">
+        <b>💡 提示</b>
+        <ul id="hintList"><li style="list-style:none;margin-left:-18px;color:var(--ink-3)">尚未使用提示</li></ul>
+      </div>
+      <details class="mini">
+        <summary>借貸法則小抄</summary>
+        <p style="margin:8px 0 0">資產、費用增加 → <b style="color:var(--debit)">借</b><br>負債、權益、收入增加 → <b style="color:var(--credit)">貸</b><br>減少則記在相反方向。</p>
+      </details>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ RESULT ============ -->
+<section class="screen" id="screen-result">
+  <div class="card result">
+    <h2>本回合結算</h2>
+    <p class="rank">稱號：<b id="rank"></b></p>
+    <div class="stats">
+      <div class="stat"><div class="v" id="rScore">0</div><div class="k">總分</div></div>
+      <div class="stat"><div class="v" id="rAcc">0%</div><div class="k">正確率</div></div>
+      <div class="stat"><div class="v" id="rTime">00:00</div><div class="k">用時</div></div>
+      <div class="stat"><div class="v" id="rCombo">0</div><div class="k">最高連擊</div></div>
+    </div>
+    <div class="newbest" id="newBest">🏆 刷新此難度最高分！</div>
+    <div class="review">
+      <h3>錯題回顧</h3>
+      <div id="reviewList"></div>
+    </div>
+    <div class="result-actions">
+      <button class="big-btn" id="againBtn">再玩一回</button>
+      <button class="big-btn alt" id="wrongBtn">只練錯題</button>
+      <button class="big-btn alt" id="menuBtn">換難度</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="stamp" id="stamp" aria-hidden="true">過帳完成<small>POSTED</small></div>
+<div class="toast" id="toast" role="status"></div>
+<footer>借貸平衡大作戰 · 生成式 AI 課程作業五 · Vibe Coding 作品</footer>
+
+<script>
+/* ================= 題庫 =================
+   a: [科目, 'D'借/'C'貸, 金額]   d: 干擾科目   ex: 解析 */
+const BANK = [
+  // ---------- 初級 ----------
+  {lv:1,q:'股東投入現金 $100,000 成立公司。',a:[['現金','D',100000],['普通股股本','C',100000]],d:['保留盈餘','銀行借款','服務收入','應付帳款'],
+   ex:'資產（現金）增加記借方；股東投入使權益（普通股股本）增加，記貸方。'},
+  {lv:1,q:'以現金 $30,000 購買辦公設備。',a:[['辦公設備','D',30000],['現金','C',30000]],d:['辦公用品費用','應付帳款','累計折舊—辦公設備','預付費用'],
+   ex:'一項資產（設備）增加記借方，另一項資產（現金）減少記貸方，資產總額不變。設備可使用多年，應資本化而非列為費用。'},
+  {lv:1,q:'向供應商賒購商品 $20,000。',sub:'採永續盤存制',a:[['存貨','D',20000],['應付帳款','C',20000]],d:['進貨','銷貨成本','現金','應收帳款'],
+   ex:'永續盤存制下購貨直接記入「存貨」（「進貨」是定期盤存制才用的科目）；賒購產生負債「應付帳款」。'},
+  {lv:1,q:'為客戶提供顧問服務，當場收到現金 $8,000。',a:[['現金','D',8000],['服務收入','C',8000]],d:['合約負債（預收收入）','應收帳款','普通股股本','銷貨收入'],
+   ex:'服務已完成即認列收入（貸方）；同時收到現金，資產增加記借方。'},
+  {lv:1,q:'提供服務 $12,000，客戶約定下個月付款。',a:[['應收帳款','D',12000],['服務收入','C',12000]],d:['現金','合約負債（預收收入）','應付帳款','利息收入'],
+   ex:'收入在提供服務時就認列，不必等收到錢；尚未收款的部分記為資產「應收帳款」。'},
+  {lv:1,q:'以現金支付本月店面租金 $5,000。',a:[['租金費用','D',5000],['現金','C',5000]],d:['預付費用','應付帳款','保留盈餘','服務收入'],
+   ex:'租金屬於本月耗用，認列為費用（借方）；費用增加最終會使權益減少。'},
+  {lv:1,q:'以現金償還前欠供應商的貨款 $20,000。',a:[['應付帳款','D',20000],['現金','C',20000]],d:['存貨','應收帳款','進貨','銷貨成本'],
+   ex:'負債減少記借方，資產（現金）減少記貸方。進貨當時已記過存貨，付款時不要再記一次。'},
+  {lv:1,q:'收到客戶先前賒欠的帳款 $12,000。',a:[['現金','D',12000],['應收帳款','C',12000]],d:['服務收入','應付帳款','合約負債（預收收入）','銷貨收入'],
+   ex:'收入在提供服務時已認列，收款只是資產形式轉換（應收帳款 → 現金），不可重複認列收入。'},
+  {lv:1,q:'以現金預付未來一年的保險費 $24,000。',a:[['預付保險費','D',24000],['現金','C',24000]],d:['保險費用','應付帳款','合約負債（預收收入）','存貨'],
+   ex:'未來 12 個月才享受的保障屬於資產「預付保險費」；之後隨時間經過，再逐月調整為保險費用。'},
+  {lv:1,q:'向銀行借入 $50,000，款項存入公司帳戶。',a:[['現金','D',50000],['銀行借款','C',50000]],d:['利息費用','普通股股本','利息收入','應收帳款'],
+   ex:'現金增加記借方；向銀行借款產生負債，記貸方。借款當下尚未發生利息。'},
+  {lv:1,q:'以現金支付員工本月薪資 $15,000。',sub:'薪資先前未估列',a:[['薪資費用','D',15000],['現金','C',15000]],d:['應付薪資','預付費用','保留盈餘','服務收入'],
+   ex:'本月薪資當月付清，直接認列費用；只有「已發生但尚未支付」時才會用到應付薪資。'},
+  {lv:1,q:'客戶預先支付下個月的服務款 $9,000。',a:[['現金','D',9000],['合約負債（預收收入）','C',9000]],d:['服務收入','應收帳款','預付費用','應付帳款'],
+   ex:'尚未履行履約義務，不能認列收入；收到的錢代表欠客戶一項服務，記為負債「合約負債（預收收入）」。'},
+  {lv:1,q:'董事會宣告發放現金股利 $10,000，尚未支付。',a:[['保留盈餘','D',10000],['應付股利','C',10000]],d:['股利費用','現金','普通股股本','薪資費用'],
+   ex:'股利是盈餘的分配，不是費用（沒有「股利費用」這個科目）；宣告時減少保留盈餘，並產生負債「應付股利」。'},
+  // ---------- 進階 ----------
+  {lv:2,q:'月底調整：辦公設備提列本月折舊 $500。',a:[['折舊費用','D',500],['累計折舊—辦公設備','C',500]],d:['辦公設備','現金','預付費用','處分設備利益'],
+   ex:'累計折舊是設備的抵銷科目，增加記貸方；不直接貸記設備，才能保留原始成本資訊。'},
+  {lv:2,q:'月底調整：先前預付的保險費，本月到期 $2,000。',a:[['保險費用','D',2000],['預付保險費','C',2000]],d:['現金','應付帳款','合約負債（預收收入）','保留盈餘'],
+   ex:'已耗用的部分由資產轉為費用：借記保險費用，貸記預付保險費。這是「預付費用」型的遞延調整。'},
+  {lv:2,q:'月底調整：先前預收的服務款中，有 $3,000 已完成服務。',a:[['合約負債（預收收入）','D',3000],['服務收入','C',3000]],d:['現金','應收帳款','預付費用','應付帳款'],
+   ex:'履約義務已完成的部分，負債減少（借方），同時認列收入（貸方）。'},
+  {lv:2,q:'月底調整：員工薪資 $4,000 已發生，但下個月才發放。',a:[['薪資費用','D',4000],['應付薪資','C',4000]],d:['現金','預付費用','應付帳款','保留盈餘'],
+   ex:'應計基礎下，費用在發生的期間認列；尚未支付的部分形成負債「應付薪資」。'},
+  {lv:2,q:'月底調整：銀行借款本月應計利息 $250，尚未支付。',a:[['利息費用','D',250],['應付利息','C',250]],d:['銀行借款','現金','利息收入','應收利息'],
+   ex:'利息隨時間經過而發生，應計入本期費用；本金不變，所以不動銀行借款。'},
+  {lv:2,q:'月底調整：定期存款利息 $300 已賺得，但尚未收到。',a:[['應收利息','D',300],['利息收入','C',300]],d:['現金','利息費用','應付利息','服務收入'],
+   ex:'已賺得的收入應認列（貸方），尚未收到的部分記為資產「應收利息」（借方）。'},
+  {lv:2,q:'期末評估應收帳款，估計預期信用減損 $1,500。',a:[['預期信用減損損失','D',1500],['備抵損失—應收帳款','C',1500]],d:['應收帳款','現金','銷貨退回','保留盈餘'],
+   ex:'只是估計，尚不知道哪一位客戶會倒帳，因此貸記抵銷科目「備抵損失」，而非直接沖減應收帳款。'},
+  {lv:2,q:'銷售商品收現 $30,000，該批商品成本 $18,000。',sub:'採永續盤存制，需同時作收入與成本兩組分錄',a:[['現金','D',30000],['銷貨收入','C',30000],['銷貨成本','D',18000],['存貨','C',18000]],d:['應收帳款','進貨','服務收入','應付帳款'],
+   ex:'永續盤存制要做兩組：①認列收入（借現金、貸銷貨收入）；②把存貨轉為費用（借銷貨成本、貸存貨）。毛利 = 30,000 − 18,000 = 12,000。'},
+  {lv:2,q:'購買機器設備 $60,000，付現 $20,000，其餘開立票據支付。',a:[['機器設備','D',60000],['現金','C',20000],['應付票據','C',40000]],d:['應付帳款','累計折舊—機器設備','銀行借款','預付費用'],
+   ex:'複合分錄：設備按總成本 60,000 入帳；貸方由現金 20,000 與應付票據 40,000 組成，借貸合計相等。'},
+  {lv:2,q:'出售一台辦公設備（成本 $20,000、累計折舊 $12,000），收現 $10,000。',a:[['現金','D',10000],['累計折舊—辦公設備','D',12000],['辦公設備','C',20000],['處分設備利益','C',2000]],d:['處分設備損失','折舊費用','應收帳款','服務收入'],
+   ex:'帳面金額 = 20,000 − 12,000 = 8,000；售價 10,000 高於帳面金額，產生利益 2,000。處分時要同時沖銷設備成本與其累計折舊。'},
+  {lv:2,q:'以現金償還銀行借款本金 $10,000，並支付利息 $500。',sub:'利息先前未估列',a:[['銀行借款','D',10000],['利息費用','D',500],['現金','C',10500]],d:['應付利息','利息收入','應付票據','預付費用'],
+   ex:'本金減少負債（借銀行借款），利息為本期費用（借利息費用），兩者合計以現金 10,500 支付。'},
+  {lv:2,q:'客戶退回先前賒銷的商品 $2,000，該批商品成本 $1,200。',sub:'採永續盤存制',a:[['銷貨退回','D',2000],['應收帳款','C',2000],['存貨','D',1200],['銷貨成本','C',1200]],d:['現金','銷貨收入','進貨退出','應付帳款'],
+   ex:'銷貨退回是銷貨收入的抵銷科目，記借方並沖減應收帳款；商品回到倉庫，存貨增加、銷貨成本減少。'}
+];
+BANK.forEach((q,i)=>q.id=i);
+
+const ROUND = 8, HINT_COST = 30, BASE = 100;
+const $ = s => document.querySelector(s);
+const fmt = n => Number(n||0).toLocaleString('en-US');
+const shuffle = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const sideName = s => s==='D'?'借方':'貸方';
+
+/* ---------- storage (safe) ---------- */
+const store = {
+  get(k,def){ try{ const v=localStorage.getItem(k); return v==null?def:JSON.parse(v);}catch(e){return def;} },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- sound (Web Audio, no files) ---------- */
+let soundOn = store.get('dcq-sound', true), actx = null;
+function tone(freq,dur=.12,type='sine',vol=.15,delay=0){
+  if(!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur+.02);
+  }catch(e){}
+}
+const sfx = {
+  pick(){tone(660,.06,'triangle',.1)},
+  drop(){tone(440,.08,'triangle',.12)},
+  good(){[523,659,784,1046].forEach((f,i)=>tone(f,.18,'triangle',.14,i*.08))},
+  bad(){tone(196,.25,'sawtooth',.08);tone(147,.3,'sawtooth',.08,.12)},
+  stamp(){tone(90,.18,'square',.12)},
+  hint(){tone(880,.1,'sine',.08);tone(990,.12,'sine',.08,.08)}
+};
+
+/* ---------- state ---------- */
+let S = {};
+let level = 1;
+let selected = null;   // account name selected via tap
+let lineSeq = 0;
+let timerId = null;
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1900); }
+function show(id){ $('#stamp').classList.remove('go'); document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id)); window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ---------- start screen ---------- */
+function renderBest(){
+  document.querySelectorAll('[data-best]').forEach(el=>{
+    const b = store.get('dcq-best-'+el.dataset.best, null);
+    el.innerHTML = b==null ? '尚無紀錄' : '最高分<br><span class="mono">'+fmt(b)+'</span>';
+  });
+}
+document.querySelectorAll('.level').forEach(btn=>btn.addEventListener('click',()=>{
+  level = +btn.dataset.lv;
+  document.querySelectorAll('.level').forEach(b=>b.setAttribute('aria-checked', b===btn));
+  sfx.pick();
+}));
+
+function startRound(questions, isRetry=false){
+  S = {queue:questions, idx:0, score:0, combo:0, maxCombo:0, correct:0, wrong:[], start:Date.now(), retry:isRetry};
+  $('#qTotal').textContent = questions.length;
+  clearInterval(timerId);
+  timerId = setInterval(()=>{ $('#timer').textContent = clock(Date.now()-S.start); },500);
+  $('#timer').textContent='00:00';
+  show('screen-game');
+  loadQuestion();
+}
+function pickQuestions(){
+  const pool = level===3 ? BANK : BANK.filter(q=>q.lv===level);
+  return shuffle(pool).slice(0, Math.min(ROUND,pool.length));
+}
+const clock = ms => { const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
+
+/* ---------- question ---------- */
+function cur(){ return S.queue[S.idx]; }
+function loadQuestion(){
+  const q = cur();
+  S.lines = []; S.hints = 0; S.answered = false; selected = null;
+  $('#qNo').textContent = S.idx+1;
+  $('#progBar').style.width = (S.idx/S.queue.length*100)+'%';
+  $('#qTag').textContent = q.lv===1 ? '交易 · 初級' : '交易 · 進階';
+  $('#qText').textContent = q.q;
+  $('#qSub').textContent = q.sub || (q.a.length>2 ? '提示：這是複合分錄，不只兩個科目' : '');
+  const accts = shuffle([...new Set([...q.a.map(x=>x[0]), ...q.d])]);
+  const chips = $('#chips'); chips.innerHTML='';
+  accts.forEach(name=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=name; b.draggable=true; b.dataset.acct=name;
+    b.addEventListener('click',()=>selectChip(b));
+    b.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',name); e.dataTransfer.effectAllowed='copy'; b.classList.add('dragging'); armDrops(true); });
+    b.addEventListener('dragend',()=>{ b.classList.remove('dragging'); armDrops(!!selected); });
+    chips.appendChild(b);
+  });
+  $('.hint-box').classList.remove('has');
+  $('#hintList').innerHTML='<li style="list-style:none;margin-left:-18px;color:var(--ink-3)">尚未使用提示</li>';
+  $('#feedback').className='card feedback';
+  ['#hintBtn','#clearBtn','#postBtn'].forEach(s=>$(s).disabled=false);
+  $('#chips').closest('.bank').style.opacity=1;
+  updateCombo();
+  renderLedger();
+}
+
+function selectChip(b){
+  if(S.answered) return;
+  if(selected===b.dataset.acct){ selected=null; }
+  else { selected=b.dataset.acct; sfx.pick(); }
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel', c.dataset.acct===selected));
+  armDrops(!!selected);
+  if(selected) $('#bankHint').textContent = `已選「${selected}」→ 點借方或貸方放入`;
+  else $('#bankHint').textContent = '點一下選取，再點借方或貸方；電腦也可直接拖曳';
+}
+function armDrops(on){ document.querySelectorAll('.drop').forEach(d=>d.classList.toggle('armed',on && !S.answered)); }
+
+function addLine(acct, side){
+  if(S.answered) return;
+  if(S.lines.some(l=>l.acct===acct && l.side===side)){ toast(`「${acct}」已經在${sideName(side)}了`); return; }
+  const id = ++lineSeq;
+  S.lines.push({id, acct, side, amt:0});
+  sfx.drop();
+  selected=null;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  armDrops(false);
+  $('#bankHint').textContent = '點一下選取，再點借方或貸方；電腦也可直接拖曳';
+  renderLedger();
+  const inp = document.querySelector(`input[data-id="${id}"]`);
+  if(inp && window.matchMedia('(pointer:fine)').matches) inp.focus();
+}
+
+document.querySelectorAll('.drop').forEach(d=>{
+  const side=d.dataset.side;
+  d.addEventListener('click',e=>{
+    if(e.target.closest('.line')) return;
+    if(selected) addLine(selected, side);
+    else if(!S.answered) toast('先在上方點選一個會計科目');
+  });
+  d.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target===d){ e.preventDefault(); if(selected) addLine(selected,side); } });
+  d.addEventListener('dragover',e=>{ if(S.answered) return; e.preventDefault(); d.classList.add('over'); });
+  d.addEventListener('dragleave',()=>d.classList.remove('over'));
+  d.addEventListener('drop',e=>{ e.preventDefault(); d.classList.remove('over'); const a=e.dataTransfer.getData('text/plain'); if(a) addLine(a, side); });
+});
+
+function renderLedger(marks){
+  ['D','C'].forEach(side=>{
+    const box = $('#drop-'+side); box.innerHTML='';
+    const lines = S.lines.filter(l=>l.side===side);
+    if(!lines.length){ box.innerHTML=`<div class="empty">${S.answered?'（空白）':'把科目放到這裡<br>'+(side==='D'?'資產、費用增加 / 負債、權益減少':'負債、權益、收入增加 / 資產減少')}</div>`; return; }
+    lines.forEach(l=>{
+      const row=document.createElement('div');
+      const m = marks ? marks[l.id] : null;
+      row.className='line'+(m===true?' ok':m===false?' bad':'');
+      row.innerHTML = `${m!=null?`<span class="mark" style="color:${m?'var(--green)':'var(--credit)'}">${m?'✓':'✗'}</span>`:''}
+        <span class="acct"></span>
+        <span class="amt-wrap"><span>$</span><input inputmode="numeric" autocomplete="off" placeholder="金額" data-id="${l.id}" aria-label="${l.acct} 金額" ${S.answered?'disabled':''}></span>
+        ${S.answered?'':`<button class="x" title="移除" aria-label="移除 ${l.acct}">✕</button>`}`;
+      row.querySelector('.acct').textContent=l.acct;
+      const inp=row.querySelector('input');
+      inp.value = l.amt ? fmt(l.amt) : '';
+      inp.addEventListener('input',()=>{
+        const digits = inp.value.replace(/[^\d]/g,'').slice(0,9);
+        l.amt = digits ? parseInt(digits,10) : 0;
+        inp.value = digits ? fmt(l.amt) : '';
+        updateTotals();
+      });
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); post(); } });
+      const x=row.querySelector('.x');
+      if(x) x.addEventListener('click',()=>{ S.lines=S.lines.filter(z=>z.id!==l.id); renderLedger(); });
+      box.appendChild(row);
+    });
+  });
+  updateTotals();
+}
+
+function updateTotals(){
+  const d = S.lines.filter(l=>l.side==='D').reduce((s,l)=>s+l.amt,0);
+  const c = S.lines.filter(l=>l.side==='C').reduce((s,l)=>s+l.amt,0);
+  $('#totD').textContent=fmt(d); $('#totC').textContent=fmt(c);
+  // balance scale: heavier side goes down
+  const max=Math.max(d,c);
+  const raw = max ? (c-d)/max*16 : 0;
+  const ang = raw===0 ? 0 : Math.sign(raw)*Math.min(16, Math.max(6, Math.abs(raw))); // 不平衡時至少傾斜 6 度，一眼看得出來
+  const rad = ang*Math.PI/180, L=80;
+  $('#beam').style.transform=`rotate(${ang}deg)`;
+  $('#panL').style.transform=`translate(${L-L*Math.cos(rad)}px, ${-L*Math.sin(rad)}px)`;
+  $('#panR').style.transform=`translate(${-(L-L*Math.cos(rad))}px, ${L*Math.sin(rad)}px)`;
+  const st=$('#scaleStatus'), df=$('#scaleDiff');
+  if(!S.lines.length){ st.textContent='放入科目開始記帳'; st.className='scale-status'; df.innerHTML='&nbsp;'; }
+  else if(d===c && d>0){ st.textContent='⚖️ 借貸平衡'; st.className='scale-status ok'; df.textContent='可以過帳了'; }
+  else { st.textContent='借貸不平衡'; st.className='scale-status no'; df.textContent = max? `差額 $${fmt(Math.abs(d-c))}（${d>c?'借方':'貸方'}較多）` : '請輸入金額'; }
+}
+
+/* ---------- hint ---------- */
+$('#hintBtn').addEventListener('click',()=>{
+  const q=cur(); if(S.answered) return;
+  if(S.hints>=q.a.length){ toast('提示已經用完囉'); return; }
+  const [acct,side,amt]=q.a[S.hints];
+  S.hints++;
+  sfx.hint();
+  if(S.hints===1){ $('#hintList').innerHTML=''; $('.hint-box').classList.add('has'); }
+  const li=document.createElement('li');
+  li.innerHTML=`「<b></b>」記在<b style="color:${side==='D'?'var(--debit)':'var(--credit)'}">${sideName(side)}</b>`;
+  li.querySelector('b').textContent=acct;
+  $('#hintList').appendChild(li);
+  if(S.hints===q.a.length) li.insertAdjacentHTML('beforeend','<br><small style="color:var(--ink-3)">（金額請自己從題目判斷）</small>');
+  toast(`提示 −${HINT_COST} 分`);
+});
+$('#clearBtn').addEventListener('click',()=>{ if(S.answered) return; S.lines=[]; renderLedger(); });
+
+/* ---------- check ---------- */
+function post(){
+  if(S.answered) return;
+  if(!S.lines.length){ toast('還沒有放任何科目'); return; }
+  if(!S.lines.some(l=>l.side==='D') || !S.lines.some(l=>l.side==='C')){ toast('分錄至少要有一個借方與一個貸方'); shake(); return; }
+  if(S.lines.some(l=>!l.amt)){ toast('每一列都要輸入金額'); shake(); return; }
+  const td=S.lines.filter(l=>l.side==='D').reduce((s,l)=>s+l.amt,0), tc=S.lines.filter(l=>l.side==='C').reduce((s,l)=>s+l.amt,0);
+  if(td!==tc){ toast(`借貸不平衡（差 $${fmt(Math.abs(td-tc))}），不能過帳！`); shake(); return; }
+  const q=cur();
+  const key=(a,s)=>s+'|'+a;
+  const ans=new Map(q.a.map(([a,s,n])=>[key(a,s),n]));
+  const marks={}; let allOk = S.lines.length===q.a.length;
+  S.lines.forEach(l=>{ const ok = ans.get(key(l.acct,l.side))===l.amt; marks[l.id]=ok; if(!ok) allOk=false; });
+  S.answered=true;
+  $('#toast').classList.remove('show');
+  ['#hintBtn','#clearBtn','#postBtn'].forEach(s=>$(s).disabled=true);
+  document.querySelectorAll('.chip').forEach(c=>{c.classList.remove('sel'); c.draggable=false;});
+  $('#chips').closest('.bank').style.opacity=.55;
+  armDrops(false);
+  renderLedger(marks);
+
+  let pts=0;
+  if(allOk){
+    S.combo++; S.maxCombo=Math.max(S.maxCombo,S.combo); S.correct++;
+    const bonus = S.combo>=2 ? Math.min(100,(S.combo-1)*20) : 0;
+    pts = Math.max(0, BASE - S.hints*HINT_COST) + bonus;
+    S.score += pts;
+    stamp(true); sfx.good();
+  } else {
+    S.combo=0; S.wrong.push(q);
+    stamp(false); sfx.bad();
+  }
+  $('#score').textContent=fmt(S.score);
+  updateCombo();
+  showFeedback(allOk, pts, q);
+}
+$('#postBtn').addEventListener('click',post);
+function shake(){ const c=$('#ledgerCard'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); sfx.bad(); }
+function stamp(ok){
+  const s=$('#stamp');
+  s.innerHTML = ok ? '過帳完成<small>POSTED</small>' : '記錯了<small>CHECK AGAIN</small>';
+  s.classList.toggle('miss',!ok);
+  s.classList.remove('go'); void s.offsetWidth; s.classList.add('go');
+  setTimeout(sfx.stamp,250);
+}
+function updateCombo(){
+  const c=$('#combo');
+  if(S.combo>=2){ $('#comboN').textContent=S.combo; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); }
+  else c.classList.remove('show');
+}
+function journalHTML(q){
+  // debits first, then credits (standard journal format)
+  const rows=[...q.a.filter(x=>x[1]==='D'),...q.a.filter(x=>x[1]==='C')];
+  return '<table><tbody>'+rows.map(([a,s,n])=>
+    `<tr class="${s==='D'?'dr':'cr'}"><td class="${s==='D'?'dr-c':'cr-c'}">${s==='D'?'借：':'貸：'}${a}</td><td class="amt">${s==='D'?fmt(n):''}</td><td class="amt">${s==='C'?fmt(n):''}</td></tr>`
+  ).join('')+'</tbody></table>';
+}
+function showFeedback(ok,pts,q){
+  const fb=$('#feedback');
+  fb.className='card feedback show '+(ok?'good':'bad');
+  $('#fbTitle').textContent = ok ? (S.hints? '答對了！（有使用提示）':'完全正確！') : '差一點！正確分錄如下';
+  $('#fbJournal').innerHTML = journalHTML(q);
+  $('#fbEx').textContent = '📘 ' + q.ex;
+  $('#fbPts').textContent = ok ? `+${pts} 分` + (S.combo>=2?`（含連擊加成）`:'') : '+0 分';
+  $('#fbPts').style.color = ok ? 'var(--green)' : 'var(--ink-3)';
+  $('#nextBtn').textContent = S.idx+1>=S.queue.length ? '看結算 →' : '下一題 →';
+  setTimeout(()=>{ fb.scrollIntoView({behavior:'smooth',block:'nearest'}); $('#nextBtn').focus({preventScroll:true}); },350);
+}
+$('#nextBtn').addEventListener('click',()=>{
+  S.idx++;
+  if(S.idx>=S.queue.length) finish();
+  else { loadQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
+});
+
+/* ---------- result ---------- */
+function finish(){
+  clearInterval(timerId);
+  $('#progBar').style.width='100%';
+  const n=S.queue.length, acc=Math.round(S.correct/n*100);
+  $('#rScore').textContent=fmt(S.score);
+  $('#rAcc').textContent=acc+'%';
+  $('#rTime').textContent=clock(Date.now()-S.start);
+  $('#rCombo').textContent=S.maxCombo;
+  $('#rank').textContent = acc===100?'會計師之星 ⭐':acc>=75?'資深查帳員':acc>=50?'記帳新秀':'會計學徒（多練幾回！）';
+  // best score (not for retry rounds)
+  let nb=false;
+  if(!S.retry){
+    const k='dcq-best-'+level, prev=store.get(k,null);
+    if(prev==null || S.score>prev){ store.set(k,S.score); nb = prev!=null || S.score>0; }
+  }
+  $('#newBest').classList.toggle('show',nb);
+  const rl=$('#reviewList');
+  if(!S.wrong.length) rl.innerHTML='<p class="review-empty">全部答對，沒有錯題！🎉</p>';
+  else {
+    rl.innerHTML='';
+    S.wrong.forEach(q=>{
+      const d=document.createElement('div'); d.className='review-item';
+      d.innerHTML=`<p></p><div class="journal">${journalHTML(q)}</div><p class="ex" style="font-weight:400"></p>`;
+      d.querySelector('p').textContent=q.q;
+      d.querySelector('.ex').textContent='📘 '+q.ex;
+      rl.appendChild(d);
+    });
+  }
+  $('#wrongBtn').disabled = !S.wrong.length;
+  renderBest();
+  show('screen-result');
+  if(acc===100) sfx.good();
+}
+
+/* ---------- nav ---------- */
+$('#startBtn').addEventListener('click',()=>startRound(pickQuestions()));
+$('#againBtn').addEventListener('click',()=>startRound(pickQuestions()));
+$('#wrongBtn').addEventListener('click',()=>{ if(S.wrong.length) startRound(shuffle(S.wrong), true); });
+$('#menuBtn').addEventListener('click',()=>{ renderBest(); show('screen-start'); });
+$('#homeBtn').addEventListener('click',()=>{
+  if($('#screen-game').classList.contains('active') && !confirmLeave()) return;
+  clearInterval(timerId); renderBest(); show('screen-start');
+});
+let leaveArmed=false;
+function confirmLeave(){
+  if(leaveArmed) { leaveArmed=false; return true; }
+  leaveArmed=true; toast('再按一次 ⌂ 放棄本回合並回首頁');
+  setTimeout(()=>leaveArmed=false,2500);
+  return false;
+}
+function syncSound(){ $('#soundBtn').setAttribute('aria-pressed',soundOn); $('#soundBtn').textContent=soundOn?'🔊':'🔇'; }
+$('#soundBtn').addEventListener('click',()=>{ soundOn=!soundOn; store.set('dcq-sound',soundOn); syncSound(); sfx.pick(); });
+syncSound();
+renderBest();
+</script>
+</body>
+</html>
